@@ -18,13 +18,11 @@ Cuisines Corner allows users to browse through a rich menu of various cuisines a
 - Users can reach out for support or feedback through the Contact Us page.
 - Secure user authentication with options for new users to sign up and existing users to log in.
 
-## Screenshots
+## Video Demo
 
-### Menu Page
+Watch the video demo of Cuisines Corner in action:
 
-
-### Order Page
-
+[Cuisines Corner Demo] 
 
 ## Getting Started
 
