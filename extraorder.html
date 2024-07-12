@@ -1,0 +1,275 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Order</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.2.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.3/css/all.min.css">
+</head>
+<body>
+    <div class="container mt-4 order-container">
+        <div class="d-flex justify-content-between mb-3">
+            <button class="btn btn-primary" onclick="window.location.href='favourites.html'">Favourites</button>
+            <button class="btn btn-success" onclick="window.location.href='doc.html'">BACK TO HOME</button>
+        </div>
+        <h2>Order Summary</h2>
+        <div class="order-box p-4">
+            <table class="table table-bordered order-table">
+                <thead>
+                    <tr>
+                        <th>Dish</th>
+                        <th>Price</th>
+                        <th>Quantity</th>
+                        <th>Subtotal</th>
+                    </tr>
+                </thead>
+                <tbody id="orderTableBody">
+                    <!-- Order items will be dynamically added here -->
+                </tbody>
+            </table>
+            <div class="order-summary">
+                <p>Tax (1%): <span id="taxAmount">&#8377;0</span></p>
+                <p>Delivery Charges: <span id="deliveryCharges">&#8377;20</span></p>
+                <p>Discount: <span id="discountAmount">&#8377;0</span></p>
+                <p>Total: <span id="totalAmount">&#8377;0</span></p>
+            </div>
+            <div class="coupon-section">
+                <input type="text" id="couponCode" placeholder="Enter coupon code" class="form-control">
+                <button class="btn btn-primary mt-2" onclick="applyCoupon()">Apply Coupon</button>
+            </div>
+            <div class="payment-methods mt-4">
+                <h4>Select Payment Method</h4>
+                <div class="form-check">
+                    <input class="form-check-input" type="radio" name="paymentMethod" id="upi" value="UPI" onchange="showPaymentDetails()">
+                    <label class="form-check-label" for="upi">UPI</label>
+                </div>
+                <div class="form-check">
+                    <input class="form-check-input" type="radio" name="paymentMethod" id="netBanking" value="Net Banking" onchange="showPaymentDetails()">
+                    <label class="form-check-label" for="netBanking">Net Banking</label>
+                </div>
+                <div class="form-check">
+                    <input class="form-check-input" type="radio" name="paymentMethod" id="cod" value="Cash on Delivery" onchange="showPaymentDetails()">
+                    <label class="form-check-label" for="cod">Cash on Delivery</label>
+                </div>
+                <div class="form-check">
+                    <input class="form-check-input" type="radio" name="paymentMethod" id="card" value="Credit/Debit Card" onchange="showPaymentDetails()">
+                    <label class="form-check-label" for="card">Credit/Debit Card</label>
+                </div>
+            </div>
+            <div id="paymentDetails" class="mt-3">
+                <!-- Payment method details will be displayed here -->
+            </div>
+            <div class="order-actions mt-4 text-center">
+                <button class="btn btn-success" id="confirmOrderBtn" disabled onclick="confirmOrder()">Confirm Order</button>
+                <button class="btn btn-danger" id="cancelOrderBtn" style="display:none;" onclick="cancelOrder()">Cancel Order</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const wishlistItems = JSON.parse(localStorage.getItem('wishlistItems')) || [];
+        const deliveryCharges = 20;
+        const taxRate = 0.01;
+        let totalAmount = 0;
+        let discountAmount = 0;
+        let taxAmount = 0;
+        let finalAmount = 0;
+
+        function renderOrder() {
+            const orderTableBody = document.getElementById('orderTableBody');
+            orderTableBody.innerHTML = '';
+
+            totalAmount = 0; // Reset total amount to avoid accumulation on re-render
+
+            wishlistItems.forEach(item => {
+                const row = document.createElement('tr');
+
+                const nameCell = document.createElement('td');
+                nameCell.textContent = item.name;
+                row.appendChild(nameCell);
+
+                const priceCell = document.createElement('td');
+                priceCell.textContent = `₹${item.price}`;
+                row.appendChild(priceCell);
+
+                const quantityCell = document.createElement('td');
+                quantityCell.textContent = item.quantity;
+                row.appendChild(quantityCell);
+
+                const subtotalCell = document.createElement('td');
+                const subtotal = item.price * item.quantity;
+                subtotalCell.textContent = `₹${subtotal}`;
+                row.appendChild(subtotalCell);
+
+                orderTableBody.appendChild(row);
+
+                totalAmount += subtotal;
+            });
+
+            taxAmount = totalAmount * taxRate;
+            finalAmount = totalAmount + taxAmount + deliveryCharges - discountAmount;
+
+            document.getElementById('taxAmount').textContent = `₹${taxAmount.toFixed(2)}`;
+            document.getElementById('deliveryCharges').textContent = `₹${deliveryCharges}`;
+            document.getElementById('discountAmount').textContent = `₹${discountAmount.toFixed(2)}`;
+            document.getElementById('totalAmount').textContent = `₹${finalAmount.toFixed(2)}`;
+        }
+
+        function applyCoupon() {
+            const couponCode = document.getElementById('couponCode').value;
+            if (couponCode === 'NEW' || couponCode === 'WELCOMEBACK') {
+                discountAmount = totalAmount * 0.10;
+                showCouponApplied();
+            } else if (couponCode === '') {
+                discountAmount = 0;
+                alert('Please enter a valid coupon code');
+            } else {
+                discountAmount = 0;
+                alert('Invalid coupon code');
+            }
+            renderOrder();
+        }
+
+        function confirmOrder() {
+            const paymentMethod = document.querySelector('input[name="paymentMethod"]:checked').value;
+            localStorage.removeItem('wishlistItems');
+            document.getElementById('cancelOrderBtn').style.display = 'inline-block';
+            showConfirmation(paymentMethod);
+        }
+
+        function cancelOrder() {
+            totalAmount -= 50;
+            alert('Order cancelled. ₹50 has been deducted as cancellation charges.');
+            showCancellation();
+        }
+
+        function showConfirmation(paymentMethod) {
+            const confirmationDialog = document.createElement('div');
+            confirmationDialog.innerHTML = `
+                <div class="confirmation-dialog">
+                    <div class="dialog-content">
+                        <i class="fas fa-check-circle"></i>
+                        <h4>Order Successfully Placed!</h4>
+                        <p>Your order will be delivered in 30 mins. Please be ready to receive.</p>
+                        ${paymentMethod === 'Cash on Delivery' ? '<p><strong>Note:</strong> ₹50 will be deducted from your next order as a handling charge.</p>' : ''}
+                        <button class="btn btn-primary" onclick="closeDialog()">Close</button>
+                    </div>
+                </div>
+            `;
+            document.body.appendChild(confirmationDialog);
+        }
+
+        function showCancellation() {
+            const cancellationDialog = document.createElement('div');
+            cancellationDialog.innerHTML = `
+                <div class="confirmation-dialog">
+                    <div class="dialog-content">
+                        <i class="fas fa-times-circle"></i>
+                        <h4>Order Cancelled. ₹50 has been deducted.</h4>
+                        <button class="btn btn-primary" onclick="closeDialog()">Close</button>
+                    </div>
+                </div>
+            `;
+            document.body.appendChild(cancellationDialog);
+        }
+
+        function showCouponApplied() {
+            const couponDialog = document.createElement('div');
+            couponDialog.innerHTML = `
+                <div class="confirmation-dialog">
+                    <div class="dialog-content">
+                        <i class="fas fa-tag"></i>
+                        <h4>Coupon Applied Successfully!</h4>
+                        <p>Discount applied to your total. Enjoy your savings!</p>
+                        <button class="btn btn-primary" onclick="closeDialog()">Close</button>
+                    </div>
+                </div>
+            `;
+            document.body.appendChild(couponDialog);
+        }
+
+        function closeDialog() {
+            document.querySelector('.confirmation-dialog').remove();
+        }
+
+        function showPaymentDetails() {
+            const paymentMethod = document.querySelector('input[name="paymentMethod"]:checked').value;
+            const paymentDetails = document.getElementById('paymentDetails');
+            const confirmOrderBtn = document.getElementById('confirmOrderBtn');
+
+            paymentDetails.innerHTML = '';
+
+            if (paymentMethod === 'UPI') {
+                paymentDetails.innerHTML = `
+                    <div class="form-check">
+                        <input class="form-check-input" type="radio" name="upiOption" id="googlePay" value="Google Pay" required>
+                        <label class="form-check-label" for="googlePay">Google Pay</label>
+                    </div>
+                    <div class="form-check">
+                        <input class="form-check-input" type="radio" name="upiOption" id="phonepe" value="PhonePe" required>
+                        <label class="form-check-label" for="phonepe">PhonePe</label>
+                    </div>
+                    <div class="form-check">
+                        <input class="form-check-input" type="radio" name="upiOption" id="paytm" value="PayTM" required>
+                        <label class="form-check-label" for="paytm">PayTM</label>
+                    </div>
+                    <div class="form-group mt-2">
+                        <label for="upiId">UPI ID</label>
+                        <input type="text" class="form-control" id="upiId" placeholder="Enter UPI ID" required>
+                    </div>
+                `;
+            } else if (paymentMethod === 'Net Banking') {
+                paymentDetails.innerHTML = `
+                    <div class="form-group mt-2">
+                        <label for="bankName">Bank Name</label>
+                        <input type="text" class="form-control" id="bankName" placeholder="Enter Bank Name" required>
+                    </div>
+                    <div class="form-group mt-2">
+                        <label for="accountNumber">Account Number</label>
+                        <input type="text" class="form-control" id="accountNumber" placeholder="Enter Account Number" required>
+                    </div>
+                    <div class="form-group mt-2">
+                        <label for="ifscCode">IFSC Code</label>
+                        <input type="text" class="form-control" id="ifscCode" placeholder="Enter IFSC Code" required>
+                    </div>
+                `;
+            } else if (paymentMethod === 'Cash on Delivery') {
+                paymentDetails.innerHTML = `
+                    <div class="mt-2">
+                        <p><i>Note: Please keep the exact change ready to avoid any hassle during delivery.</i></p>
+                        <p><i>₹50 will be deducted from your next order as a handling charge.</i></p>
+                    </div>
+                `;
+                confirmOrderBtn.disabled = false; // Enable Confirm Order button for Cash on Delivery
+            } else if (paymentMethod === 'Credit/Debit Card') {
+                paymentDetails.innerHTML = `
+                    <div class="form-group mt-2">
+                        <label for="cardNumber">Card Number</label>
+                        <input type="text" class="form-control" id="cardNumber" placeholder="Enter Card Number" required>
+                    </div>
+                    <div class="form-group mt-2">
+                        <label for="expiryDate">Expiry Date</label>
+                        <input type="text" class="form-control" id="expiryDate" placeholder="MM/YY" required>
+                    </div>
+                    <div class="form-group mt-2">
+                        <label for="cvv">CVV</label>
+                        <input type="text" class="form-control" id="cvv" placeholder="Enter CVV" required>
+                    </div>
+                `;
+            }
+
+            if (paymentMethod !== 'Cash on Delivery') {
+                const paymentInputs = paymentDetails.querySelectorAll('input');
+                paymentInputs.forEach(input => input.addEventListener('input', () => {
+                    const allFilled = Array.from(paymentInputs).every(input => input.value.trim() !== '');
+                    confirmOrderBtn.disabled = !allFilled;
+                }));
+            }
+        }
+
+        renderOrder();
+    </script>
+</body>
+</html>
