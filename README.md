@@ -24,6 +24,9 @@ Watch the video demo of Cuisines Corner in action:
 
 [Cuisines Corner Demo] 
 
+https://github.com/user-attachments/assets/cf90051e-1199-4bc2-b097-22d4f140d913
+
+
 ## Getting Started
 
 To get a local copy up and running follow these simple steps.
